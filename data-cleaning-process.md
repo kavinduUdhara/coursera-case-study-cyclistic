@@ -143,5 +143,68 @@ This dataset contains trip data about first quarter of 2019.
 9. checking and cleaning station IDs and names.
     - Inspect unique stations IDs and names
       ```r
-      unique_stations <- data %>% select(start_station_id, start_station_name) %>% distinct()
+      unique_from_stations <- data %>% select(from_station_id, from_station_name) %>% distinct()
+      unique_to_stations <- data %>% select(to_station_id, to_station_name) %>% distinct()
+      unique_to_stations <- unique_to_stations %>% rename(from_station_id = to_station_id,from_station_name = to_station_name)
+      unique_stations <- bind_rows(unique_from_stations, unique_to_stations) %>%
+      unique_stations <- unique_to_stations %>% rename(station_id = from_station_id,station_name = from_station_name)
       ```
+    - check duplicates in unique values:
+      ```r
+      unique_stations[duplicated(unique_stations$station_id), ]
+      unique_stations[duplicated(unique_stations$station_name), ]
+      ```
+10. Investigate `usertype`
+    - check unique values and distribution of usertype
+      ```r
+      unique(data$usertype)
+      data %>% group_by(usertype) %>% summarize(row_count = n(), per = n() / nrow(.) * 100)
+      ```
+      ```
+        usertype   row_count   per
+        <chr>          <int> <dbl>
+      1 Customer       23163  6.34
+      2 Subscriber    341906 93.7 
+      ```
+
+11. Save the cleaned data:
+    ```r
+    write.csv(data, "./cleaned/divvy_trips_2019_Q1.csv", row.names = FALSE)
+    rm(data, unique_from_stations, unique_to_stations, unique_stations)
+    ```
+summarized code:
+```r
+library(tidyverse)
+data <- read.csv("./csv/divvy_trips_2019_Q1.csv")
+
+# have a placeholder to null values
+data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
+
+#clean unresonable birthyear data
+data <- data %>% mutate(age = 2019 - as.numeric(birthyear))
+data <- data %>% mutate(birthyear = ifelse(age > 100 | age < 10, NA, birthyear), age = ifelse(age > 100 | age < 10, NA, age))
+
+#change data type of start_time and end_time
+data <- data %>%
+mutate(
+  start_time = as.POSIXct(start_time, format = "%Y-%m-%d %H:%M:%S"),
+  end_time = as.POSIXct(end_time, format = "%Y-%m-%d %H:%M:%S")
+)
+
+#mutate trip duration
+data <- data %>%
+mutate(
+  tripduration = as.numeric(difftime(end_time, start_time, units = "secs")),
+  tripduration = sprintf("%02d:%02d:%02d", tripduration %/% 3600, (tripduration %% 3600) %/% 60, tripduration %% 60)
+)
+
+#check null values on station_names and IDs
+unique_from_stations <- data %>% select(from_station_id, from_station_name) %>% distinct()
+unique_to_stations <- data %>% select(to_station_id, to_station_name) %>% distinct()
+unique_to_stations <- unique_to_stations %>% rename(from_station_id = to_station_id,from_station_name = to_station_name)
+unique_stations <- bind_rows(unique_from_stations, unique_to_stations) %>%
+unique_stations <- unique_to_stations %>% rename(station_id = from_station_id,station_name = from_station_name)
+
+unique_stations[duplicated(unique_stations$station_id), ]
+unique_stations[duplicated(unique_stations$station_name), ]
+```
