@@ -1,5 +1,5 @@
 # Dataset - Divvy_Trips_2019_Q1
-This dataset contains trip data about first quarter of 2019.sa
+This dataset contains trip data about first quarter of 2019.
 
 1. Identified null values
         
@@ -60,7 +60,7 @@ This dataset contains trip data about first quarter of 2019.sa
     - Due to the high percentage of null values for casual riders, deleting those rows could lead to a loss of valuable data.
     - Insted considered: filling missing values with a placeholder value. ("Unknown")
       ```r
-      cleaned_data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
+      data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
       ```
 
 4. Visualizing values in `birthyear` feild.
@@ -87,7 +87,43 @@ This dataset contains trip data about first quarter of 2019.sa
 5. Reassign unreasonable ages to NA.
     - To maintain data intergrity of the dataset unreliable age data converted into null values.
       ```r
-      cleaned_data <- data %>% mutate(birthyear = ifelse(age > 100 | age < 10, NA, birthyear), age = ifelse(age > 100 | age < 10, NA, age))
+      data <- data %>% mutate(birthyear = ifelse(age > 100 | age < 10, NA, birthyear), age = ifelse(age > 100 | age < 10, NA, age))
       ```
-
+    - efected rows: 
 6. Handeling null values in `birthyear` feild.
+    - Desided to keep null values in birthyear feild as they are. 
+    - Considered filling null values with the median value, but it could lead to increse the count for the median birthyear. filling null values with a random birthyear could lead to inaccurate data. Deleting records with null values could lead to loss other valueble data.
+    - limitations: 
+
+7. Checking for duplicates.
+    - Checked duplicates with following code. And there was no duplicates
+      ```r
+      data[duplicated(data), ]
+      ```
+      ```
+      <0 rows> (or 0-length row.names)
+      ```
+      Filter non duplicate data:
+      ```r
+      data <- data[!duplicated(data), ]
+      ```
+    - 0 rows effected with above code.
+
+8. Verify data types.
+    - Ensure `start_time` and `end_time` in correct format:
+      ```r
+      data <- data %>%
+      mutate(
+        start_time = as.POSIXct(start_time, format = "%Y-%m-%d %H:%M:%S"),
+        end_time = as.POSIXct(end_time, format = "%Y-%m-%d %H:%M:%S")
+      )
+      ```
+    - Identified `tripduration` is not in the correct format:
+    
+      ```r
+      summary(data$tripduration)
+      ```
+      ```
+       Length     Class      Mode 
+        365069 character character 
+      ```
