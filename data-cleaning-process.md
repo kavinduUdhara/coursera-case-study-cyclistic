@@ -119,11 +119,29 @@ This dataset contains trip data about first quarter of 2019.
       )
       ```
     - Identified `tripduration` is not in the correct format:
-    
+
       ```r
       summary(data$tripduration)
       ```
       ```
        Length     Class      Mode 
         365069 character character 
+      ```
+    - Before resolving `tripduration`, verified that `start_time` is less than `end_time`
+      ```r
+      data %>% filter(end_time <= start_time) %>% summarize(rows = nrow(.))
+      ```
+    - mutate trip durarion:
+      ```r
+      data <- data %>%
+      mutate(
+        tripduration = as.numeric(difftime(end_time, start_time, units = "secs")),
+        tripduration = sprintf("%02d:%02d:%02d", tripduration %/% 3600, (tripduration %% 3600) %/% 60, tripduration %% 60)
+      )
+      ```
+
+9. checking and cleaning station IDs and names.
+    - Inspect unique stations IDs and names
+      ```r
+      unique_stations <- data %>% select(start_station_id, start_station_name) %>% distinct()
       ```
