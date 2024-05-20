@@ -7,6 +7,7 @@ This dataset contains trip data about first quarter of 2019.
         ```r
         library(tidyverse)
         data <- read.csv("./csv/divvy_trips_2019_Q1.csv")
+        data <- data %>% rename(bike_id = bikeid)
         ```
     - Checked for missing values with following code
         ```r
@@ -176,6 +177,7 @@ summarized code:
 ```r
 library(tidyverse)
 data <- read.csv("./csv/divvy_trips_2019_Q1.csv")
+data <- data %>% rename(bike_id = bikeid)
 
 # have a placeholder to null values
 data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
