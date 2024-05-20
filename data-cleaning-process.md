@@ -146,7 +146,7 @@ This dataset contains trip data about first quarter of 2019.
       unique_from_stations <- data %>% select(from_station_id, from_station_name) %>% distinct()
       unique_to_stations <- data %>% select(to_station_id, to_station_name) %>% distinct()
       unique_to_stations <- unique_to_stations %>% rename(from_station_id = to_station_id,from_station_name = to_station_name)
-      unique_stations <- bind_rows(unique_from_stations, unique_to_stations) %>%
+      unique_stations <- bind_rows(unique_from_stations, unique_to_stations)
       unique_stations <- unique_to_stations %>% rename(station_id = from_station_id,station_name = from_station_name)
       ```
     - check duplicates in unique values:
@@ -176,6 +176,156 @@ summarized code:
 ```r
 library(tidyverse)
 data <- read.csv("./csv/divvy_trips_2019_Q1.csv")
+
+# have a placeholder to null values
+data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
+
+#clean unresonable birthyear data
+data <- data %>% mutate(age = 2019 - as.numeric(birthyear))
+data <- data %>% mutate(birthyear = ifelse(age > 100 | age < 10, NA, birthyear), age = ifelse(age > 100 | age < 10, NA, age))
+
+#change data type of start_time and end_time
+data <- data %>%
+mutate(
+  start_time = as.POSIXct(start_time, format = "%Y-%m-%d %H:%M:%S"),
+  end_time = as.POSIXct(end_time, format = "%Y-%m-%d %H:%M:%S")
+)
+
+#mutate trip duration
+data <- data %>%
+mutate(
+  tripduration = as.numeric(difftime(end_time, start_time, units = "secs")),
+  tripduration = sprintf("%02d:%02d:%02d", tripduration %/% 3600, (tripduration %% 3600) %/% 60, tripduration %% 60)
+)
+
+#check null values on station_names and IDs
+unique_from_stations <- data %>% select(from_station_id, from_station_name) %>% distinct()
+unique_to_stations <- data %>% select(to_station_id, to_station_name) %>% distinct()
+unique_to_stations <- unique_to_stations %>% rename(from_station_id = to_station_id,from_station_name = to_station_name)
+unique_stations <- bind_rows(unique_from_stations, unique_to_stations) %>%
+unique_stations <- unique_to_stations %>% rename(station_id = from_station_id,station_name = from_station_name)
+
+unique_stations[duplicated(unique_stations$station_id), ]
+unique_stations[duplicated(unique_stations$station_name), ]
+```
+
+# Dataset - Divvy_Trips_2019_Q2
+This dataset contains trip data about second quarter of 2019.
+
+1. Changed the col names for data intergrity.
+        
+    - Used R (Programming lang.) to load and inspect the dataset.
+        ```r
+        library(tidyverse)
+        data <- read.csv("./csv/divvy_trips_2019_Q2.csv")
+        #check col names
+        colnames(data)
+        ```
+    - Changed the col names.
+        ```r
+        data <- data %>% rename(trip_id = X01...Rental.Details.Rental.ID, start_time = X01...Rental.Details.Local.Start.Time, end_time = X01...Rental.Details.Local.End.Time, bike_id = X01...Rental.Details.Bike.ID, tripduration = X01...Rental.Details.Duration.In.Seconds.Uncapped, from_station_id = X03...Rental.Start.Station.ID, from_station_name = X03...Rental.Start.Station.Name, to_station_id = X02...Rental.End.Station.ID, to_station_name = X02...Rental.End.Station.Name, usertype = User.Type, gender = Member.Gender, birthyear = X05...Member.Details.Member.Birthday.Year)
+
+        #check the col names back
+        colnames(data)
+        ```
+2. Check for null values:
+      - ran followoing code to check null values:
+        ```r
+        null_values <- sapply(data, function(x) sum(is.na(x) | x == ""))
+        null_values
+        ```
+        ```perl
+         gender         birthyear 
+         185554             180953
+        ```
+    - Identified null values in the "gender" and "birthyear" feilds (there are 365069 total rows):
+
+        |feild | null_val | % |
+        |------|----------|---|
+        |gender|185554     |16.74429%|
+        |birthyear|180953  |16.3291%|
+3. Handeling null values in `gender` feild:
+    
+    Note: it's very similr to previous file. (ref: divvy_trips_ 2019_Q1)
+    - filling missing values with a placeholder value. ("Unknown")
+      ```r
+      data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
+      ```
+4. Handeling null and unresonable values in `birthyear` feild.
+    - derive age from birthyear and then reasign NA for unresonable values:
+      ```r
+      data <- data %>% mutate(age = 2019 - as.numeric(birthyear))
+      data <- data %>% mutate(birthyear = ifelse(age > 100 | age < 10, NA, birthyear), age = ifelse(age > 100 | age < 10, NA, age))
+      ```
+    - 115 rows effected.
+5. Checking for duplicates:
+    - Checked duplicates on primary key:
+      ```r
+      data[duplicated(data$trip_id), ]
+      ```
+8. Verify data types.
+    - Ensure `start_time` and `end_time` in correct format:
+      ```r
+      data <- data %>%
+      mutate(
+        start_time = as.POSIXct(start_time, format = "%Y-%m-%d %H:%M:%S"),
+        end_time = as.POSIXct(end_time, format = "%Y-%m-%d %H:%M:%S")
+      )
+      ```
+    - Identified `tripduration` is not in the correct format:
+
+      ```r
+      summary(data$tripduration)
+      ```
+      ```
+       Length     Class      Mode 
+        365069 character character 
+      ```
+    - Before resolving `tripduration`, verified that `start_time` is less than `end_time`
+      ```r
+      data %>% filter(end_time <= start_time) %>% summarize(rows = nrow(.))
+      ```
+    - mutate trip durarion:
+      ```r
+      data <- data %>%
+      mutate(
+        tripduration = as.numeric(difftime(end_time, start_time, units = "secs")),
+        tripduration = sprintf("%02d:%02d:%02d", tripduration %/% 3600, (tripduration %% 3600) %/% 60, tripduration %% 60)
+      )
+      ```
+7. checking and cleaning station IDs and names.
+    - Inspect unique stations IDs and names
+      ```r
+      unique_from_stations <- data %>% select(from_station_id, from_station_name) %>% distinct()
+      unique_to_stations <- data %>% select(to_station_id, to_station_name) %>% distinct()
+      unique_to_stations <- unique_to_stations %>% rename(from_station_id = to_station_id,from_station_name = to_station_name)
+      unique_stations <- bind_rows(unique_from_stations, unique_to_stations)
+      unique_stations <- unique_to_stations %>% rename(station_id = from_station_id,station_name = from_station_name)
+      ```
+    - check duplicates in unique values:
+      ```r
+      unique_stations[duplicated(unique_stations$station_id), ]
+      unique_stations[duplicated(unique_stations$station_name), ]
+      ```
+8. Investigate `usertype`
+    - check unique values and distribution of usertype
+      ```r
+      unique(data$usertype)
+      data %>% group_by(usertype) %>% summarize(row_count = n(), per = n() / nrow(.) * 100)
+      ```
+
+9. Save the cleaned data:
+    ```r
+    write.csv(data, "./cleaned/divvy_trips_2019_Q2.csv", row.names = FALSE)
+    rm(data, unique_from_stations, unique_to_stations, unique_stations)
+    ```
+summarized code:
+```r
+library(tidyverse)
+data <- read.csv("./csv/divvy_trips_2019_Q1.csv")
+
+# change the col names
+data <- data %>% rename(trip_id = X01...Rental.Details.Rental.ID, start_time = X01...Rental.Details.Local.Start.Time, end_time = X01...Rental.Details.Local.End.Time, bike_id = X01...Rental.Details.Bike.ID, tripduration = X01...Rental.Details.Duration.In.Seconds.Uncapped, from_station_id = X03...Rental.Start.Station.ID, from_station_name = X03...Rental.Start.Station.Name, to_station_id = X02...Rental.End.Station.ID, to_station_name = X02...Rental.End.Station.Name, usertype = User.Type, gender = Member.Gender, birthyear = X05...Member.Details.Member.Birthday.Year)
 
 # have a placeholder to null values
 data <- data %>% mutate(gender = ifelse(gender == "", "unknown", gender))
