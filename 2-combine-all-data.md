@@ -15,6 +15,7 @@ library(lubridate)
 data <- data %>% mutate(week = wday(as.Date(start_time), week_start = 1))
 data <- data %>% mutate(month = month(as.Date(start_time)))
 data <- data %>% mutate(hour = hour(start_time))
+data <- mutate(hour = as.numeric(substr(tripduration, 12, 13)))
 data <- data %>% filter(!(end_time <= start_time))
 data <- data %>% mutate(tripdu_hr = as.numeric(substr(tripduration, 1, 2)))
 data <- data %>% mutate(tripdu_in_sec = as.numeric(difftime(as.POSIXct(end_time, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_time, format = "%Y-%m-%d %H:%M:%S"), units = "secs")))
@@ -44,7 +45,21 @@ write.csv(temp1, "./analytics/weekly_ride_count.csv", row.names = FALSE)
 temp1 <- data %>% group_by(week, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
 write.csv(temp1, "./analytics/weekly_ride_count_by_usertype.csv", row.names = FALSE)
 
+#monthly and weekly distribution of ride count:
+temp1 <- data %>% group_by(month, week) %>% summarize(n())
+write.csv(temp1, "./analytics/week_monthly_ride_count.csv", row.names = FALSE)
+
+temp1 <- data %>% group_by(month, week, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
+write.csv(temp1, "./analytics/week_monthly_ride_count_by_usertype.csv", row.names = FALSE)
+
+#montly distribution of rides
+temp1 <- data %>% group_by(month, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
+write.csv(temp1, "./analytics/monthly_ride_count_by_usertype.csv", row.names = FALSE)
+
 #analyze trip duration data
+temp1 <- data %>% group_by(hour,usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
+write.csv(temp1, "./analytics/active_hour_by_usertype.csv", row.names = FALSE)
+
 temp2 <- data %>%
   group_by(tripdu_hr, usertype) %>%
   summarize(count = n(), .groups = 'drop') %>%
