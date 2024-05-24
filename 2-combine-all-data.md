@@ -56,9 +56,25 @@ write.csv(temp1, "./analytics/week_monthly_ride_count_by_usertype.csv", row.name
 temp1 <- data %>% group_by(month, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
 write.csv(temp1, "./analytics/monthly_ride_count_by_usertype.csv", row.names = FALSE)
 
-#analyze trip duration data
+#analyze most active hour
 temp1 <- data %>% group_by(hour,usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
 write.csv(temp1, "./analytics/active_hour_by_usertype.csv", row.names = FALSE)
+temp1 <- data %>% filter(week <= 5) %>% group_by(week, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = usertype, values_from = count)
+write.csv(temp1, "./analytics/active_hour_by_weekdays.csv", row.names = FALSE)
+
+temp1 <- data %>% filter(week <= 5, usertype == "Customer") %>% group_by(week, hour, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = hour, values_from = count)
+write.csv(temp1, "./analytics/active_hour_by_weekdays_cus.csv", row.names = FALSE)
+
+temp1 <- data %>% filter(week > 5, usertype == "Customer") %>% group_by(week, hour, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = hour, values_from = count)
+write.csv(temp1, "./analytics/active_hour_by_weekend_cus.csv", row.names = FALSE)
+
+temp1 <- data %>% filter(week > 5, usertype == "Subscriber") %>% group_by(week, hour, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = hour, values_from = count)
+write.csv(temp1, "./analytics/active_hour_by_weekend_sub.csv", row.names = FALSE)
+
+temp1 <- data %>% filter(week <= 5, usertype == "Subscriber") %>% group_by(week, hour, usertype) %>% summarize(count = n()) %>% pivot_wider(names_from = hour, values_from = count)
+
+
+#analyze trip duration data
 
 temp2 <- data %>%
   group_by(tripdu_hr, usertype) %>%
